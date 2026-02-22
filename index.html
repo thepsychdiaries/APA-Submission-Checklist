@@ -3,21 +3,19 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>APA Checklist</title>
-
+<title>APA Checklist (Tabbed)</title>
 <style>
 :root{
   --bg:#f5f5f5;
   --card:#ffffff;
   --border:#e3e3e3;
   --text:#222;
-  --muted:#666;
-  --accent:#6b6b6b;
+  --muted:#6a6a6a;
+  --accent:#3f3f3f;
   --radius:14px;
 }
 
 *{box-sizing:border-box;}
-
 body{
   margin:0;
   font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
@@ -38,12 +36,26 @@ body{
 header{
   padding:12px;
   border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
 }
 
 h1{
   font-size:14px;
   margin:0;
   font-weight:600;
+}
+
+.pill{
+  font-size:11px;
+  color:var(--muted);
+  background:#f1f1f1;
+  border:1px solid var(--border);
+  padding:5px 8px;
+  border-radius:999px;
+  white-space:nowrap;
 }
 
 .progressWrap{
@@ -72,33 +84,73 @@ h1{
   transition:width .2s ease;
 }
 
-.list{
-  padding:8px 8px 12px 8px;
+/* Tabs */
+.tabs{
   display:flex;
-  flex-direction:column;
+  gap:6px;
+  padding:10px 10px 0 10px;
+  overflow-x:auto;
+  scrollbar-width:thin;
+}
+.tabs::-webkit-scrollbar{ height:6px; }
+.tabs::-webkit-scrollbar-thumb{ background:#d7d7d7; border-radius:999px; }
+
+.tab{
+  flex:0 0 auto;
+  border:1px solid var(--border);
+  background:#f7f7f7;
+  color:var(--muted);
+  font-size:11px;
+  padding:6px 10px;
+  border-radius:999px;
+  cursor:pointer;
+  user-select:none;
+  white-space:nowrap;
+}
+.tab.active{
+  background:#111;
+  color:#fff;
+  border-color:#111;
+}
+
+/* Panel */
+.panel{
+  padding:10px 10px 12px 10px;
+}
+
+.panelTitle{
+  font-size:12px;
+  font-weight:650;
+  color:var(--text);
+  margin:2px 2px 8px 2px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
   gap:10px;
 }
-
-.groupTitle{
+.panelCount{
   font-size:11px;
-  font-weight:600;
   color:var(--muted);
-  margin:6px 4px 0 4px;
-  text-transform:uppercase;
-  letter-spacing:.5px;
 }
 
-.item{
+.items{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+label.item{
   display:flex;
   align-items:flex-start;
   gap:8px;
-  padding:6px 6px;
-  border-radius:8px;
+  padding:8px 8px;
+  border-radius:10px;
+  border:1px solid transparent;
   cursor:pointer;
 }
-
-.item:hover{
+label.item:hover{
   background:#f3f3f3;
+  border-color:#ededed;
 }
 
 input[type="checkbox"]{
@@ -108,157 +160,246 @@ input[type="checkbox"]{
   margin-top:2px;
 }
 
-.label{
+.text{
   font-size:12px;
   line-height:1.3;
   color:var(--text);
 }
-
-.checked .label{
+.checked .text{
   text-decoration:line-through;
-  color:#999;
+  color:#9a9a9a;
 }
 
 footer{
   border-top:1px solid var(--border);
   padding:8px 12px;
-  text-align:right;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
 }
 
 button{
   font-size:11px;
-  border:none;
-  background:none;
+  border:1px solid var(--border);
+  background:#fafafa;
   color:var(--muted);
+  border-radius:10px;
+  padding:6px 10px;
   cursor:pointer;
 }
-button:hover{color:#000;}
+button:hover{ color:#000; border-color:#d0d0d0; }
+
+.hint{
+  font-size:11px;
+  color:var(--muted);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
 </style>
 </head>
 
 <body>
 <div class="widget">
-<header>
-  <h1>APA 7 Submission Checklist</h1>
-</header>
+  <header>
+    <h1>APA 7 Checklist</h1>
+    <div class="pill" id="pill">0/0</div>
+  </header>
 
-<div class="progressWrap">
-  <div class="progressText">
-    <span id="percent">0%</span>
-    <span id="count">0/0</span>
+  <div class="progressWrap">
+    <div class="progressText">
+      <span id="percent">0% complete</span>
+      <span id="remaining">0 remaining</span>
+    </div>
+    <div class="bar"><div class="fill" id="fill"></div></div>
   </div>
-  <div class="bar"><div class="fill" id="fill"></div></div>
-</div>
 
-<div class="list" id="checklist"></div>
+  <div class="tabs" id="tabs"></div>
 
-<footer>
-  <button onclick="resetList()">Reset</button>
-</footer>
+  <div class="panel">
+    <div class="panelTitle">
+      <span id="panelTitle">—</span>
+      <span class="panelCount" id="panelCount">0/0</span>
+    </div>
+    <div class="items" id="items"></div>
+  </div>
+
+  <footer>
+    <button type="button" id="resetBtn">Reset</button>
+    <div class="hint">Swipe tabs →</div>
+  </footer>
 </div>
 
 <script>
 const DATA = [
-{group:"Formatting",items:[
-"A4, 2.54 cm margins",
-"Double-spaced, left-aligned",
-"Page numbers top right",
-"Approved font (e.g. Times New Roman 12)",
-"0.5 inch paragraph indents",
-"No running head"
-]},
-{group:"Title Page",items:[
-"Title bold + centred",
-"Name, university, course code/name",
-"Instructor name",
-"Due date (Day Month Year)"
-]},
-{group:"Headings & Structure",items:[
-"APA heading levels used correctly",
-"No heading called 'Introduction'",
-"Paragraphs linked to question"
-]},
-{group:"In-Text Citations",items:[
-"All claims cited (author + year)",
-"Quotes include page numbers",
-"Correct use of et al.",
-"Every reference cited in text"
-]},
-{group:"Reference List",items:[
-"'References' bold + centred",
-"Alphabetical order",
-"Hanging indents",
-"Double-spaced",
-"DOI/URL included",
-"Journal titles + volume italicised"
-]},
-{group:"Stats (if relevant)",items:[
-"p, M, SD, t, F italicised",
-"Variables named consistently",
-"Ethics mentioned if required"
-]}
+  { key:"format", label:"Formatting", items:[
+    "A4, 2.54 cm margins",
+    "Double-spaced, left-aligned",
+    "Page numbers top right",
+    "Approved font (e.g. Times New Roman 12)",
+    "0.5 inch paragraph indents",
+    "No running head"
+  ]},
+  { key:"title", label:"Title Page", items:[
+    "Title bold + centred (upper half)",
+    "Name, university, course code/name",
+    "Instructor name",
+    "Due date (Day Month Year)"
+  ]},
+  { key:"structure", label:"Headings", items:[
+    "APA heading levels used correctly",
+    "No heading called “Introduction”",
+    "Paragraphs clearly linked to the question"
+  ]},
+  { key:"citations", label:"In-Text", items:[
+    "All claims cited (author + year)",
+    "Quotes include page numbers",
+    "Correct use of et al.",
+    "Every reference cited in text"
+  ]},
+  { key:"refs", label:"References", items:[
+    "New page titled “References” (bold, centred)",
+    "Alphabetical order",
+    "Hanging indents",
+    "Double-spaced",
+    "DOI or URL included where available",
+    "Journal titles + volume italicised"
+  ]},
+  { key:"stats", label:"Stats", items:[
+    "p, M, SD, t, F italicised",
+    "Variables named consistently",
+    "Ethics mentioned if required"
+  ]}
 ];
 
-const STORAGE="apa_widget_v1";
-const container=document.getElementById("checklist");
-const fill=document.getElementById("fill");
-const percent=document.getElementById("percent");
-const count=document.getElementById("count");
+const STORAGE_STATE = "apa_tabs_state_v1";
+const STORAGE_TAB = "apa_tabs_active_v1";
 
-function load(){return JSON.parse(localStorage.getItem(STORAGE)||"{}");}
-function save(s){localStorage.setItem(STORAGE,JSON.stringify(s));}
+const tabsEl = document.getElementById("tabs");
+const itemsEl = document.getElementById("items");
+const panelTitleEl = document.getElementById("panelTitle");
+const panelCountEl = document.getElementById("panelCount");
+const fillEl = document.getElementById("fill");
+const pillEl = document.getElementById("pill");
+const percentEl = document.getElementById("percent");
+const remainingEl = document.getElementById("remaining");
+const resetBtn = document.getElementById("resetBtn");
 
-function render(){
-  const state=load();
-  container.innerHTML="";
-  let total=0,done=0;
+function loadState(){
+  try { return JSON.parse(localStorage.getItem(STORAGE_STATE) || "{}"); }
+  catch { return {}; }
+}
+function saveState(state){
+  try { localStorage.setItem(STORAGE_STATE, JSON.stringify(state)); } catch {}
+}
+function loadActiveTab(){
+  const k = localStorage.getItem(STORAGE_TAB);
+  return DATA.some(d => d.key === k) ? k : DATA[0].key;
+}
+function saveActiveTab(key){
+  try { localStorage.setItem(STORAGE_TAB, key); } catch {}
+}
 
-  DATA.forEach((g,gi)=>{
-    const title=document.createElement("div");
-    title.className="groupTitle";
-    title.textContent=g.group;
-    container.appendChild(title);
-
-    g.items.forEach((item,ii)=>{
+function totals(state){
+  let total = 0, done = 0;
+  DATA.forEach((g) => {
+    g.items.forEach((_, idx) => {
       total++;
-      const id=`${gi}-${ii}`;
-      if(state[id]) done++;
-
-      const label=document.createElement("label");
-      label.className="item";
-      if(state[id]) label.classList.add("checked");
-
-      const cb=document.createElement("input");
-      cb.type="checkbox";
-      cb.checked=!!state[id];
-
-      cb.onchange=()=>{
-        const s=load();
-        s[id]=cb.checked;
-        save(s);
-        render();
-      };
-
-      const span=document.createElement("div");
-      span.className="label";
-      span.textContent=item;
-
-      label.appendChild(cb);
-      label.appendChild(span);
-      container.appendChild(label);
+      if (state[`${g.key}:${idx}`]) done++;
     });
   });
-
-  const pct=total?Math.round((done/total)*100):0;
-  fill.style.width=pct+"%";
-  percent.textContent=pct+"%";
-  count.textContent=done+"/"+total;
+  return { total, done, remaining: total - done };
 }
 
-function resetList(){
-  localStorage.removeItem(STORAGE);
+function groupTotals(state, groupKey){
+  const group = DATA.find(d => d.key === groupKey);
+  if(!group) return { total:0, done:0 };
+  const total = group.items.length;
+  let done = 0;
+  group.items.forEach((_, idx) => {
+    if (state[`${group.key}:${idx}`]) done++;
+  });
+  return { total, done };
+}
+
+let activeKey = loadActiveTab();
+
+function renderTabs(){
+  const state = loadState();
+  tabsEl.innerHTML = "";
+  DATA.forEach(g => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "tab" + (g.key === activeKey ? " active" : "");
+    const gt = groupTotals(state, g.key);
+    btn.textContent = `${g.label} ${gt.done}/${gt.total}`;
+    btn.onclick = () => {
+      activeKey = g.key;
+      saveActiveTab(activeKey);
+      render();
+    };
+    tabsEl.appendChild(btn);
+  });
+}
+
+function renderPanel(){
+  const state = loadState();
+  const group = DATA.find(d => d.key === activeKey) || DATA[0];
+  const gt = groupTotals(state, group.key);
+
+  panelTitleEl.textContent = group.label;
+  panelCountEl.textContent = `${gt.done}/${gt.total}`;
+  itemsEl.innerHTML = "";
+
+  group.items.forEach((text, idx) => {
+    const id = `${group.key}:${idx}`;
+
+    const label = document.createElement("label");
+    label.className = "item";
+    if (state[id]) label.classList.add("checked");
+
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = !!state[id];
+    cb.onchange = () => {
+      const next = loadState();
+      next[id] = cb.checked;
+      saveState(next);
+      render(); // refresh counts + progress + strike-through
+    };
+
+    const div = document.createElement("div");
+    div.className = "text";
+    div.textContent = text;
+
+    label.appendChild(cb);
+    label.appendChild(div);
+    itemsEl.appendChild(label);
+  });
+}
+
+function renderProgress(){
+  const state = loadState();
+  const t = totals(state);
+  const pct = t.total ? Math.round((t.done / t.total) * 100) : 0;
+
+  fillEl.style.width = pct + "%";
+  pillEl.textContent = `${t.done}/${t.total}`;
+  percentEl.textContent = `${pct}% complete`;
+  remainingEl.textContent = `${t.remaining} remaining`;
+}
+
+function render(){
+  renderTabs();
+  renderPanel();
+  renderProgress();
+}
+
+resetBtn.onclick = () => {
+  localStorage.removeItem(STORAGE_STATE);
   render();
-}
+};
 
 render();
 </script>
